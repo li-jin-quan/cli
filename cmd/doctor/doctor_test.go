@@ -43,7 +43,7 @@ func newDoctorFactory(ios *iostreams.IOStreams, svr *httptest.Server) *cmdutil.F
 // all 6 check names appear in output and the command exits 0.
 func TestDoctorCmd_AllPass(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
@@ -85,7 +85,7 @@ func TestDoctorCmd_AllPass(t *testing.T) {
 // TestDoctorCmd_OneFail verifies that a failing check causes a non-zero exit.
 func TestDoctorCmd_OneFail(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -122,7 +122,7 @@ func TestDoctorCmd_OneFail(t *testing.T) {
 // TestDoctorCmd_WarnOnly verifies that warnings alone yield exit 0.
 func TestDoctorCmd_WarnOnly(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -162,7 +162,7 @@ func TestDoctorCmd_WarnOnly(t *testing.T) {
 // TestDoctorCmd_JSON verifies --json outputs a JSON array with exactly 6 objects.
 func TestDoctorCmd_JSON(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -208,7 +208,7 @@ func TestDoctorCmd_Timeout(t *testing.T) {
 		t.Skip("skipping timeout test in short mode")
 	}
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -247,7 +247,7 @@ func TestDoctorCmd_Timeout(t *testing.T) {
 // TestDoctorCmd_Output verifies all 6 check names appear in non-JSON output.
 func TestDoctorCmd_Output(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -281,7 +281,7 @@ func TestDoctorCmd_NoLocalJSONFlag(t *testing.T) {
 // TestDoctorCmd_ExitCodeOnFail verifies SilentError is returned on [fail] checks.
 func TestDoctorCmd_ExitCodeOnFail(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -333,6 +333,15 @@ func walletServer(t *testing.T, userBody string) *httptest.Server {
 	}))
 }
 
+// setHome points the home directory at home for the duration of the test.
+// os.UserHomeDir reads $HOME on Unix but %USERPROFILE% on Windows, so a
+// fixture that sets only HOME leaves the real profile in play on Windows.
+func setHome(t *testing.T, home string) {
+	t.Helper()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+}
+
 func runDoctor(t *testing.T, svr *httptest.Server) string {
 	t.Helper()
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
@@ -340,7 +349,7 @@ func runDoctor(t *testing.T, svr *httptest.Server) string {
 	// os.UserHomeDir, so without this the suite reads a real credential off the
 	// developer's machine and signs a live request with it.
 	if os.Getenv("KH_TEST_KEEP_HOME") == "" {
-		t.Setenv("HOME", t.TempDir())
+		setHome(t, t.TempDir())
 	}
 	ios, outBuf, _, _ := iostreams.Test()
 	tc := doctor.NewTestableCmd(newDoctorFactory(ios, svr))
@@ -389,7 +398,7 @@ func agenticWallet(t *testing.T) (secret, subOrg, addr string) {
 	t.Helper()
 	secret, subOrg, addr = "s3cr3t-test-key", "sub_abc123", "0xABCD1234EF567890ABCD1234EF567890ABCD1234"
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setHome(t, home)
 	t.Setenv("KH_TEST_KEEP_HOME", "1")
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".keeperhub"), 0o700))
 	body := `{"subOrgId":"` + subOrg + `","walletAddress":"` + addr + `","hmacSecret":"` + secret + `"}`
@@ -461,7 +470,7 @@ func TestDoctorCmd_AgenticWalletRejectedSignature(t *testing.T) {
 }
 
 func TestDoctorCmd_AgenticWalletNotConfigured(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	svr := walletServer(t, `{"walletAddress":"0xABC"}`)
 	defer svr.Close()
 
@@ -536,7 +545,7 @@ func TestDoctorCmd_AgenticUnknownSubOrgIsActionable(t *testing.T) {
 
 // Absent is the normal state on most installs, so it must not warn.
 func TestDoctorCmd_AgenticNotConfiguredIsNotAWarning(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	svr := walletServer(t, `{"walletAddress":"0xABC"}`)
 	defer svr.Close()
 

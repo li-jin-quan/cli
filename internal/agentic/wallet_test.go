@@ -49,10 +49,19 @@ func TestSign_EveryFieldIsBound(t *testing.T) {
 	}
 }
 
+// setHome points the home directory at home for the duration of the test.
+// os.UserHomeDir reads $HOME on Unix but %USERPROFILE% on Windows, so a
+// fixture that sets only HOME leaves the real profile in play on Windows.
+func setHome(t *testing.T, home string) {
+	t.Helper()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+}
+
 func writeWallet(t *testing.T, body string) {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setHome(t, home)
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".keeperhub"), 0o700))
 	require.NoError(t, os.WriteFile(
 		filepath.Join(home, ".keeperhub", agentic.ConfigName), []byte(body), 0o600,
@@ -70,7 +79,7 @@ func TestLoad_ReadsTheWallet(t *testing.T) {
 }
 
 func TestLoad_MissingFileIsNotConfigured(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 
 	_, err := agentic.Load()
 
