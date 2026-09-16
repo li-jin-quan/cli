@@ -336,10 +336,16 @@ func walletServer(t *testing.T, userBody string) *httptest.Server {
 // setHome points the home directory at home for the duration of the test.
 // os.UserHomeDir reads $HOME on Unix but %USERPROFILE% on Windows, so a
 // fixture that sets only HOME leaves the real profile in play on Windows.
+//
+// It also clears KH_HOST. ResolveHost reads that variable ahead of the
+// factory's DefaultHost, so an exported KH_HOST sends these checks to the live
+// host instead of the test server and the assertions fail with nothing
+// pointing at the cause.
 func setHome(t *testing.T, home string) {
 	t.Helper()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	t.Setenv("KH_HOST", "")
 }
 
 func runDoctor(t *testing.T, svr *httptest.Server) string {
