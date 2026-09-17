@@ -44,6 +44,7 @@ func newDoctorFactory(ios *iostreams.IOStreams, svr *httptest.Server) *cmdutil.F
 func TestDoctorCmd_AllPass(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	setHome(t, t.TempDir())
+	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
@@ -86,6 +87,7 @@ func TestDoctorCmd_AllPass(t *testing.T) {
 func TestDoctorCmd_OneFail(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	setHome(t, t.TempDir())
+	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -123,6 +125,7 @@ func TestDoctorCmd_OneFail(t *testing.T) {
 func TestDoctorCmd_WarnOnly(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	setHome(t, t.TempDir())
+	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -163,6 +166,7 @@ func TestDoctorCmd_WarnOnly(t *testing.T) {
 func TestDoctorCmd_JSON(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	setHome(t, t.TempDir())
+	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -209,6 +213,7 @@ func TestDoctorCmd_Timeout(t *testing.T) {
 	}
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	setHome(t, t.TempDir())
+	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -248,6 +253,7 @@ func TestDoctorCmd_Timeout(t *testing.T) {
 func TestDoctorCmd_Output(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	setHome(t, t.TempDir())
+	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -282,6 +288,7 @@ func TestDoctorCmd_NoLocalJSONFlag(t *testing.T) {
 func TestDoctorCmd_ExitCodeOnFail(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	setHome(t, t.TempDir())
+	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -336,21 +343,20 @@ func walletServer(t *testing.T, userBody string) *httptest.Server {
 // setHome points the home directory at home for the duration of the test.
 // os.UserHomeDir reads $HOME on Unix but %USERPROFILE% on Windows, so a
 // fixture that sets only HOME leaves the real profile in play on Windows.
-//
-// It also clears KH_HOST. ResolveHost reads that variable ahead of the
-// factory's DefaultHost, so an exported KH_HOST sends these checks to the live
-// host instead of the test server and the assertions fail with nothing
-// pointing at the cause.
 func setHome(t *testing.T, home string) {
 	t.Helper()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	t.Setenv("KH_HOST", "")
 }
 
 func runDoctor(t *testing.T, svr *httptest.Server) string {
 	t.Helper()
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	// Cleared unconditionally. ResolveHost reads KH_HOST ahead of the factory's
+	// DefaultHost, so an exported KH_HOST sends these checks to the live host
+	// instead of svr. That is unrelated to the temporary profile below, so it
+	// does not belong behind KH_TEST_KEEP_HOME.
+	t.Setenv("KH_HOST", "")
 	// HOME too: the agentic check resolves ~/.keeperhub/wallet.json through
 	// os.UserHomeDir, so without this the suite reads a real credential off the
 	// developer's machine and signs a live request with it.

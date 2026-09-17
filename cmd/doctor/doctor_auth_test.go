@@ -33,6 +33,7 @@ func authLine(out string) string {
 
 func TestDoctorCmd_AuthFailsWhenCredentialIsRefused(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -56,6 +57,7 @@ func TestDoctorCmd_AuthFailsWhenCredentialIsRefused(t *testing.T) {
 
 func TestDoctorCmd_AuthPassesWhenCredentialIsAccepted(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -73,6 +75,7 @@ func TestDoctorCmd_AuthPassesWhenCredentialIsAccepted(t *testing.T) {
 
 func TestDoctorCmd_AuthDoesNotProbeTheAnonymousTolerantEndpoint(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 	// Doctor fans its checks out across goroutines, so the handler runs
 	// concurrently and the record of seen paths has to be guarded.

@@ -59,6 +59,7 @@ func versionDoctorFactory(ios *iostreams.IOStreams, appVersion, minimumHeader st
 
 func TestDoctorCmd_CLIVersionPassesWhenServerAdvertisesNoMinimum(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 	ios, outBuf, _, _ := iostreams.Test()
 	tc := doctor.NewTestableCmd(versionDoctorFactory(ios, "1.2.3", ""))
@@ -71,6 +72,7 @@ func TestDoctorCmd_CLIVersionPassesWhenServerAdvertisesNoMinimum(t *testing.T) {
 
 func TestDoctorCmd_CLIVersionWarnsWhenBelowServerMinimum(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 	ios, outBuf, _, _ := iostreams.Test()
 	tc := doctor.NewTestableCmd(versionDoctorFactory(ios, "0.3.0", "0.11.1"))
@@ -85,6 +87,7 @@ func TestDoctorCmd_CLIVersionWarnsWhenBelowServerMinimum(t *testing.T) {
 
 func TestDoctorCmd_CLIVersionPassesWhenAtServerMinimum(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 	ios, outBuf, _, _ := iostreams.Test()
 	tc := doctor.NewTestableCmd(versionDoctorFactory(ios, "0.11.1", "0.11.1"))
@@ -97,6 +100,7 @@ func TestDoctorCmd_CLIVersionPassesWhenAtServerMinimum(t *testing.T) {
 
 func TestDoctorCmd_CLIVersionReportsDevBuildWithoutComparing(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	t.Setenv("KH_HOST", "") // ResolveHost reads it ahead of the factory's DefaultHost.
 	ios, outBuf, _, _ := iostreams.Test()
 	// A minimum far above any real release: if dev builds were compared,
